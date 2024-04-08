@@ -531,3 +531,76 @@ O ```${{env.target_username}}``` especifica o novo dono dos arquivos.
 O ```${{env.target_group}}``` especifica o grupo dono dos arquivos.
 
 O ``` ${{env.destination}}``` especifica a localização da pasta cujo usuário dono será alterado (neste caso, inclusive para as pastas e os arquivos filhos)
+
+16. **Ignorando pastas e arquivos**
+
+Em algumas situações, não é desejável que todos os arquivos sejam sincronizados com o servidor. Por exemplo, as pastas ".git", ".github" e ".vscode" podem ser ignoradas.
+
+Para solucionar esse problema, vamos modificar a workflow do GitHub Actions para ignorar esses arquivos.
+
+```
+name: Deploy automático para o servidor
+
+env:
+    hostname:
+    username:
+    destination:
+    target_username:
+    target_group:
+    excluded_items_command: "--exclude .git --exclude .github --exclude .vscode"
+    
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+        types:
+            - closed
+            
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - run: sudo apt update
+            - run: sudo apt install -y rsync
+            - run: sudo apt install -y openssh-client
+            - run: sudo apt install -y secure-delete
+            - run: sudo apt install -y sshpass
+            - run: mkdir -p ~/.ssh
+            - run: echo "${{secrets.SSH_PRIVATE_KEY}}" > ~/.ssh/id_rsa
+            - run: chmod 600 ~/.ssh/id_rsa
+            - run: sshpass -p "${{secrets.SERVER_PASSWORD}}" ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{env.username}}@${{env.hostname}} "echo \"${{secrets.SERVER_PASSWORD}}\" | sudo -S chown --recursive ${{env.username}} ${{env.destination}}"
+            - run: rsync -p ${{secrets.SERVER_PASSWORD}} --archive --verbose --compress --delete ${{env.excluded_items_command}} -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" ./ ${{env.username}}@${{env.hostname}}:${{env.destination}}
+              continue-on-error: true
+            - run: sshpass -p "${{secrets.SERVER_PASSWORD}}" ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{env.username}}@${{env.hostname}} "echo \"${{secrets.SERVER_PASSWORD}}\" | sudo -S chown --recursive ${{env.target_username}}:${{env.target_group}} ${{env.destination}}"
+            - run: srm ~/.ssh/id_rsa
+```
+
+A opção ```--exclude``` do comando rsync excluí um arquivo ou pasta. Ela deve ser repetida para cada arquivo ou pasta que se deseja excluir.
+
+17. **Adicionando chave ssh privada ao repositório do GitHub.**
+
+Na página do repositório do GitHub (o qual esteja localizado a workflow do GitHub actions), clique em "**Settings**".
+
+<img src="Imagens/Adicionar_chave_ssh_privada/0.png">
+
+Clique em "**Secrets and Variables**", da seção "**Security**"
+
+<img src="Imagens/Adicionar_chave_ssh_privada/1.png">
+
+e depois em "**Actions**",
+
+<img src="Imagens/Adicionar_chave_ssh_privada/2.png">
+
+e em "**Repository secrets**", clique em "**New repository secret**".
+
+<img src="Imagens/Adicionar_chave_ssh_privada/3.png">
+
+Em "**Name**" coloque ```SSH_PRIVATE_KEY```, e em "**Secret**" cole a chave ssh privada.
+
+E clique em "**Add secret**".
+
+<img src="Imagens/Adicionar_chave_ssh_privada/4.png">
