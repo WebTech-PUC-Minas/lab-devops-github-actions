@@ -16,6 +16,12 @@ Este projeto pode ser aplicado em diversas situações:
 - Quando temos um servidor que pode ser acessado por SSH pela internet.
 - E temos um repositório no GitHub que queremos que esteja sempre sincronizado com o servidor.
 
+## Preparação do ambiente
+
+Para podermos colocar em prática o Deploy automático com o GitHub actions, será necessário termos um servidor web que possamos acessar por SSH. Para isso, iremos criar máquinas virtuais na nuvem Microsoft Azure.
+
+[Laboratório de Criação de Servidor Web no Microsoft Azure](https://github.com/WebTech-PUC-Minas/lab-azurewebserver).
+
 ## Roadmap
 
 ### STEP 1 - Criar o workflow do GitHub Actions
